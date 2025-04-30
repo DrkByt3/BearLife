@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Bear Life</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+    }
+    #hub, #minigame-strength, #minigame-speed {
+      display: none;
+      padding: 20px;
+    }
+    #bear {
+      font-size: 100px;
+    }
+    canvas {
+      border: 2px solid #444;
+      background: #fff;
+      display: block;
+      margin: 20px auto;
+    }
+    button {
+      font-size: 16px;
+      padding: 10px 20px;
+      margin: 10px;
+    }
+    #stats {
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<!-- 🏠 Hub -->
+<div id="hub">
+  <h1>🐻 Bear Life Hub</h1>
+  <div id="bear">ʕ•ᴥ•ʔ</div>
+  <div id="stats">
+    <h3>Bear Stats</h3>
+    <ul style="list-style:none; padding:0;">
+      <li>Strength: <span id="strength">0</span></li>
+      <li>Speed: <span id="speed">0</span></li>
+      <li>Endurance: <span id="endurance">0</span></li>
+      <li>Intelligence: <span id="intelligence">0</span></li>
+      <li>Ferocity: <span id="ferocity">0</span></li>
+    </ul>
+  </div>
+  <button onclick="goToMinigame('strength')">💪 Train Strength</button>
+  <button onclick="goToMinigame('speed')">🏃 Train Speed</button>
+</div>
+
+<!-- 💪 Strength Mini-Game -->
+<div id="minigame-strength">
+  <h1>💪 Strength Smash!</h1>
+  <p>Press SPACE when the boulder hits the red zone!</p>
+  <canvas id="gameCanvasStrength" width="400" height="400"></canvas>
+  <p id="log-strength" style="font-family: monospace;"></p>
+  <button onclick="returnToHub()">🏠 Return to Hub</button>
+</div>
+
+<!-- 🏃 Speed Mini-Game -->
+<div id="minigame-speed">
+  <h1>🏃 Speed Dodge!</h1>
+  <p>Use ⬅️ ➡️ to dodge falling logs. Survive as long as you can!</p>
+  <canvas id="gameCanvasSpeed" width="400" height="400"></canvas>
+  <p id="log-speed" style="font-family: monospace;"></p>
+  <button onclick="returnToHub()">🏠 Return to Hub</button>
+</div>
+
+<script>
+  // === Shared Stats ===
+  let stats = {
+    strength: 0,
+    speed: 0,
+    endurance: 0,
+    intelligence: 0,
+    ferocity: 0
+  };
+
+  function updateStatsUI() {
+    for (let stat in stats) {
+      const el = document.getElementById(stat);
+      if (el) el.textContent = stats[stat];
+    }
+  }
+
+  // === Navigation Functions ===
+  function goToHub() {
+    document.getElementById("hub").style.display = "block";
+    document.getElementById("minigame-strength").style.display = "none";
+    document.getElementById("minigame-speed").style.display = "none";
+    updateStatsUI();
+  }
+
+  function goToMinigame(type) {
+    console.log('Navigating to ' + type);  // Debug log
+    document.getElementById("hub").style.display = "none";
+    document.getElementById("minigame-strength").style.display = "none";
+    document.getElementById("minigame-speed").style.display = "none";
+    if (type === "strength") {
+      document.getElementById("minigame-strength").style.display = "block";
+      resetBoulder();
+    } else if (type === "speed") {
+      document.getElementById("minigame-speed").style.display = "block";
+      resetSpeedGame();
+    }
+  }
+
+  function returnToHub() {
+    goToHub();
+  }
+
+  // === Strength Game ===
+  const canvasStrength = document.getElementById("gameCanvasStrength");
+  const ctxS = canvasStrength.getContext("2d");
+
+  let boulder = {
+    x: randomX(),
+    y: 0,
+    radius: 20,
+    speed: randomSpeed(),
+    active: true
+  };
+
+  const smashZone = {
+    y: 320,
+    height: 20
+  };
+
+  function randomX() {
+    return Math.random() * (canvasStrength.width - 40) + 20;
+  }
+
+  function randomSpeed() {
+    return 2 + Math.random() * 3;
+  }
+
+  function drawStrength() {
+    console.log('Drawing strength game');  // Debug log
+    if (document.getElementById("minigame-strength").style.display === "none") {
+      requestAnimationFrame(drawStrength);
+      return;
+    }
+
+    ctxS.clearRect(0, 0, canvasStrength.width, canvasStrength.height);
+
+    ctxS.fillStyle = "red";
+    ctxS.fillRect(0, smashZone.y, canvasStrength.width, smashZone.height);
+
+    if (boulder.active) {
+      ctxS.beginPath();
+      ctxS.arc(boulder.x, boulder.y, boulder.radius, 0, Math.PI * 2);
+      ctxS.fillStyle = "gray";
+      ctxS.fill();
+      ctxS.closePath();
+    }
+
+    moveBoulder();
+    requestAnimationFrame(drawStrength);
+  }
+
+  function moveBoulder() {
+    if (boulder.active) {
+      boulder.y += boulder.speed;
+      if (boulder.y > canvasStrength.height + boulder.radius) {
+        resetBoulder();
+      }
+    }
+  }
+
+  function resetBoulder() {
+    boulder.x = randomX();
+    boulder.y = -30;
+    boulder.speed = randomSpeed();
+    boulder.active = true;
+  }
+
+  function smash() {
+    if (
+      boulder.y + boulder.radius >= smashZone.y &&
+      boulder.y - boulder.radius <= smashZone.y + smashZone.height
+    ) {
+      const gain = Math.floor(Math.random() * 5) + 1;
+      stats.strength += gain;
+      document.getElementById("log-strength").textContent = `💥 Smashed it! +${gain} STRENGTH`;
+      updateStatsUI();
+      resetBoulder();
+    } else {
+      document.getElementById("log-strength").textContent = `❌ Missed!`;
+    }
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (document.getElementById("minigame-strength").style.display !== "none" && e.code === "Space") {
+      smash();
+    }
+  });
+
+  // === Speed Game ===
+  const canvasSpeed = document.getElementById("gameCanvasSpeed");
+  const ctxSpd = canvasSpeed.getContext("2d");
+
+  let bear = {
+    x: 180,
+    y: 360,
+    width: 40,
+    height: 40,
+    speed: 5
+  };
+
+  let log = {
+    x: Math.random() * 360,
+    y: -40,
+    width: 40,
+    height: 20,
+    speed: 2
+  };
+
+  let alive = true;
+  let speedScore = 0;
+
+  function resetSpeedGame() {
+    bear.x = 180;
+    log.y = -40;
+    log.x = Math.random() * 360;
+    log.speed = 2;
+    alive = true;
+    speedScore = 0;
+    setTimeout(() => {
+      requestAnimationFrame(drawSpeed);
+    }, 0);
+  }
+
+  function drawSpeed() {
+    if (document.getElementById("minigame-speed").style.display === "none") return;
+
+    ctxSpd.clearRect(0, 0, canvasSpeed.width, canvasSpeed.height);
+
+    // Bear
+    ctxSpd.fillStyle = "brown";
+    ctxSpd.fillRect(bear.x, bear.y, bear.width, bear.height);
+
+    // Log
+    ctxSpd.fillStyle = "sienna";
+    ctxSpd.fillRect(log.x, log.y, log.width, log.height);
+
+    if (alive) {
+      log.y += log.speed;
+      log.speed += 0.005; // gradually gets harder
+
+      if (log.y > canvasSpeed.height) {
+        log.y = -40;
+        log.x = Math.random() * 360;
+        speedScore++;
+      }
+
+      if (checkCollision(bear, log)) {
+        alive = false;
+        const gain = speedScore;
+        stats.speed += gain;
+        document.getElementById("log-speed").textContent = `💀 You got hit! +${gain} SPEED`;
+        updateStatsUI();
+        return;
+      }
+
+      requestAnimationFrame(drawSpeed);
+    }
+  }
+
+  function checkCollision(a, b) {
+    return (
+      a.x < b.x + b.width &&
+      a.x + a.width > b.x &&
+      a.y < b.y + b.height &&
+      a.y + a.height > b.y
+    );
+  }
+
+  document.addEventListener("keydown", (e) => {
+    if (document.getElementById("minigame-speed").style.display !== "none") {
+      if (e.code === "ArrowLeft" && bear.x > 0) {
+        bear.x -= bear.speed;
+      } else if (e.code === "ArrowRight" && bear.x < canvasSpeed.width - bear.width) {
+        bear.x += bear.speed;
+      }
+    }
+  });
+
+  // === Load Hub On Start ===
+  window.onload = goToHub;
+</script>
+
+</body>
+</html>
