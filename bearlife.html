@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Bear Life</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      background: #f0f0f0;
+      margin: 0;
+      padding: 0;
+    }
+    #hub, #minigame-strength, #minigame-speed, #minigame-endurance, #minigame-intelligence {
+      display: none;
+      padding: 20px;
+    }
+    #bear { font-size: 100px; }
+    canvas { border: 2px solid #444; background: #fff; display: block; margin: 20px auto; }
+    button { font-size: 16px; padding: 10px 20px; margin: 10px; }
+    #stats { margin-top: 10px; }
+    #question { font-size: 20px; margin: 10px; }
+  </style>
+</head>
+<body>
+
+<div id="hub">
+  <h1>🐻 Bear Life Hub</h1>
+  <div id="bear">ʕ•ᴥ•ʔ</div>
+  <div id="stats">
+    <h3>Bear Stats</h3>
+    <ul style="list-style:none; padding:0;">
+      <li>Strength: <span id="strength">0</span></li>
+      <li>Speed: <span id="speed">0</span></li>
+      <li>Endurance: <span id="endurance">0</span></li>
+      <li>Intelligence: <span id="intelligence">0</span></li>
+    </ul>
+  </div>
+  <button onclick="goToMinigame('strength')">💪 Train Strength</button>
+  <button onclick="goToMinigame('speed')">🏃 Train Speed</button>
+  <button onclick="goToMinigame('endurance')">🏋️ Train Endurance</button>
+  <button onclick="goToMinigame('intelligence')">🧠 Train Intelligence</button>
+</div>
+
+<div id="minigame-strength">
+  <h1>💪 Strength Smash!</h1>
+  <p>Press SPACE when the circle overlaps the red bar!</p>
+  <canvas id="gameCanvasStrength" width="400" height="300"></canvas>
+  <p id="log-strength" style="font-family: monospace;"></p>
+  <button onclick="returnToHub()">🏠 Return to Hub</button>
+</div>
+
+<div id="minigame-speed">
+  <h1>🏃 Speed Dodge!</h1>
+  <p>Use ◀️ ▶️ to dodge falling logs. Press ESC to stop.</p>
+  <canvas id="gameCanvasSpeed" width="400" height="300"></canvas>
+  <p id="log-speed" style="font-family: monospace;"></p>
+  <button onclick="returnToHub()">🏠 Return to Hub</button>
+</div>
+
+<div id="minigame-endurance">
+  <h1>🏋️ Endurance Challenge!</h1>
+  <p>Press SPACE when the triangle overlaps the red bar!</p>
+  <canvas id="gameCanvasEndurance" width="400" height="300"></canvas>
+  <p id="log-endurance" style="font-family: monospace;"></p>
+  <button onclick="returnToHub()">🏠 Return to Hub</button>
+</div>
+
+<div id="minigame-intelligence">
+  <h1>🧠 Bear IQ Quiz!</h1>
+  <p id="question"></p>
+  <input type="number" id="answer" />
+  <button onclick="checkAnswer()">Submit</button>
+  <p id="log-intelligence" style="font-family: monospace;"></p>
+  <button onclick="returnToHub()">🏠 Return to Hub</button>
+</div>
+
+<script>
+let stats = { strength:0, speed:0, endurance:0, intelligence:0 };
+function updateStatsUI() { for(let s in stats) document.getElementById(s).textContent = stats[s]; }
+function goToHub() {
+  ['hub','minigame-strength','minigame-speed','minigame-endurance','minigame-intelligence']
+    .forEach(id=>document.getElementById(id).style.display = 'none');
+  document.getElementById('hub').style.display = 'block';
+  updateStatsUI();
+}
+function goToMinigame(type) {
+  goToHub();
+  document.getElementById('hub').style.display='none';
+  document.getElementById('minigame-'+type).style.display='block';
+  if(type==='strength') initStrength();
+  if(type==='speed') initSpeed();
+  if(type==='endurance') initEndurance();
+  if(type==='intelligence') initIntelligence();
+}
+function returnToHub(){ goToHub(); }
+
+// Strength
+const cS=document.getElementById('gameCanvasStrength'), ctxS=cS.getContext('2d');
+let circle, zoneX;
+function initStrength(){ circle={x:0,y:cS.height/2,rad:15,spd:3}; zoneX=cS.width/2-50; ctxS.clearRect(0,0,cS.width,cS.height); drawStrength(); }
+function drawStrength(){ ctxS.clearRect(0,0,cS.width,cS.height);
+  // red bar
+  ctxS.fillStyle='red'; ctxS.fillRect(zoneX,0,100,cS.height);
+  // circle
+  ctxS.beginPath(); ctxS.arc(circle.x,circle.y,circle.rad,0,2*Math.PI); ctxS.fillStyle='blue'; ctxS.fill();
+  circle.x+=circle.spd; if(circle.x>cS.width+circle.rad) circle.x=-circle.rad;
+  requestAnimationFrame(drawStrength);
+}
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('minigame-strength').style.display==='block' && e.code==='Space'){
+    if(circle.x>zoneX && circle.x<zoneX+100){ stats.strength++; updateStatsUI(); document.getElementById('log-strength').textContent='✅ Good!'; }
+    else document.getElementById('log-strength').textContent='❌ Miss!';
+  }
+});
+
+// Endurance
+const cE=document.getElementById('gameCanvasEndurance'), ctxE=cE.getContext('2d');
+let tri, zoneY;
+function initEndurance(){ tri={x:cE.width/2,y:0,size:30,spd:3}; zoneY=cE.height/2-25; ctxE.clearRect(0,0,cE.width,cE.height); drawEndurance(); }
+function drawEndurance(){ ctxE.clearRect(0,0,cE.width,cE.height);
+  ctxE.fillStyle='red'; ctxE.fillRect(0,zoneY,cE.width,50);
+  ctxE.fillStyle='green'; ctxE.beginPath(); ctxE.moveTo(tri.x,tri.y); ctxE.lineTo(tri.x-tri.size,tri.y+tri.size); ctxE.lineTo(tri.x+tri.size,tri.y+tri.size); ctxE.closePath(); ctxE.fill();
+  tri.y+=tri.spd; if(tri.y>cE.height+tri.size) tri.y=-tri.size;
+  requestAnimationFrame(drawEndurance);
+}
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('minigame-endurance').style.display==='block' && e.code==='Space'){
+    if(tri.y>zoneY && tri.y<zoneY+50){ stats.endurance++; updateStatsUI(); document.getElementById('log-endurance').textContent='✅ Good!'; tri.y=-tri.size; }
+    else document.getElementById('log-endurance').textContent='❌ Miss!';
+  }
+});
+
+// Speed
+const cSp=document.getElementById('gameCanvasSpeed'), ctxSp=cSp.getContext('2d');
+let bear, logs, speedTime;
+function initSpeed(){ bear={x:cSp.width/2-20,y:cSp.height-40,w:40,h:40,spd:5}; logs=[]; speedTime=Date.now(); ctxSp.clearRect(0,0,cSp.width,cSp.height); drawSpeed(); }
+function drawSpeed(){ ctxSp.clearRect(0,0,cSp.width,cSp.height);
+  // bear
+  ctxSp.fillStyle='brown'; ctxSp.fillRect(bear.x,bear.y,bear.w,bear.h);
+  // spawn logs
+  if(Date.now()-speedTime>1000){ logs.push({x:Math.random()*(cSp.width-20),y:0,w:20,h:20}); speedTime=Date.now(); if(bear.spd<12) bear.spd+=0.2; }
+  // draw logs
+  ctxSp.fillStyle='black';
+  for(let i=0;i<logs.length;i++){ let l=logs[i]; l.y+=bear.spd; ctxSp.fillRect(l.x,l.y,l.w,l.h);
+    if(l.y>bear.y && l.x<bear.x+bear.w && l.x+l.w>bear.x){ document.getElementById('log-speed').textContent='💀 Hit! ESC to exit'; return; }
+    if(l.y>cSp.height) { logs.splice(i,1); stats.speed++; updateStatsUI(); }
+  }
+  requestAnimationFrame(drawSpeed);
+}
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('minigame-speed').style.display==='block'){
+    if(e.key==='ArrowLeft') bear.x=Math.max(0,bear.x-bear.spd);
+    if(e.key==='ArrowRight') bear.x=Math.min(cSp.width-bear.w,bear.x+bear.spd);
+    if(e.key==='Escape') returnToHub();
+  }
+});
+
+// Intelligence
+let questions=[
+  {q:"One bear plus two bears equals what?",a:3},
+  {q:"Bear Bob has 5 honey and Bear Amy takes 2. How much left?",a:3},
+  {q:"3 bears sit, 2 join. Total bears?",a:5},
+  {q:"Bear finds 4 berries, eats 1. Left?",a:3},
+  {q:"2 bears each get 3 fish. Total fish?",a:6},
+  {q:"Bear sees 7 bees, 2 fly away. Bees left?",a:5}
+];
+let iqIndex;
+function initIntelligence(){ iqIndex=0; document.getElementById('log-intelligence').textContent=''; generateQuestion(); }
+function generateQuestion(){ document.getElementById('question').textContent=questions[iqIndex].q; document.getElementById('answer').value=''; }
+function checkAnswer(){ let ans=parseInt(document.getElementById('answer').value);
+  if(ans===questions[iqIndex].a){ stats.intelligence++; updateStatsUI(); document.getElementById('log-intelligence').textContent='✅ Correct!'; }
+  else document.getElementById('log-intelligence').textContent='❌ Wrong!';
+  iqIndex=(iqIndex+1)%questions.length; generateQuestion();
+}
+
+window.onload=goToHub;
+</script>
+</body>
+</html>
+
